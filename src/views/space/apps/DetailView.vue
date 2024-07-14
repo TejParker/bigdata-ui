@@ -1,11 +1,58 @@
 <script setup lang="ts">
+// import { post } from '@/utils/request'
+//
+// async function debug() {
+//   const response = await post('/app/01f848fa-d51f-4ecb-92f4-0ff85303cf74/debug', {
+//     body: { query: 'Hello, who are you?' },
+//   })
+//   console.log(response)
+// }
+//定义交互所需的数据
+import { ref } from 'vue'
+import { Message } from '@arco-design/web-vue'
 import { post } from '@/utils/request'
 
-async function debug() {
-  const response = await post('/app/01f848fa-d51f-4ecb-92f4-0ff85303cf74/debug', {
-    body: { query: 'Hello, who are you?' },
+const query = ref('')
+const messages = ref([])
+const isLoading = ref(false)
+
+function clearMessage() {
+  messages.value = []
+}
+
+async function send() {
+  // 获取用户输入的数据,并校验是否存在
+  if (!query.value) {
+    Message.error('用户请求不能为空')
+    return
+  }
+  if (isLoading.value) {
+    Message.warning('上一条请求未结束,请稍等')
+    return
+  }
+  // 提取用户请求
+  const humanQuery = query.value
+  messages.value.push({
+    role: 'human',
+    content: humanQuery,
   })
-  console.log(response)
+
+  // 清空输入框
+  query.value = ''
+
+  // 发起请求
+  isLoading.value = true
+  const response = await post('/app/01f848fa-d51f-4ecb-92f4-0ff85303cf74/debug', {
+    body: { query: humanQuery },
+  })
+
+  const content = response.data.content
+  //将ai回复的消息放入message列表
+  messages.value.push({
+    role: 'ai',
+    content: content,
+  })
+  isLoading.value = false
 }
 </script>
 
@@ -37,43 +84,85 @@ async function debug() {
         </header>
         <div class="h-full min-h-0 px-6 py-7 overflow-x-hidden overflow-y-scroll scrollbar-w-none">
           <!--          人类消息-->
-          <div class="flex flex-row gap-2 mb-6">
-            <a-avatar :style="{ backgroundColor: '#3370ff' }" class="flex-shrink-0" :size="30"
+          <div class="flex flex-row gap-2 mb-6" v-for="message in messages" :key="message.content">
+            <a-avatar
+              v-if="message.role === 'human'"
+              :style="{ backgroundColor: '#3370ff' }"
+              class="flex-shrink-0"
+              :size="30"
               >X
             </a-avatar>
-            <div class="flex flex-col gap-2">
-              <div class="font-semibold text-gray-700">Evan</div>
-              <div
-                class="bg-blue-700 text-white border border-blue-800 px-4 py-3 rounded-2xl leading-5"
-              >
-                请详细解释一下Attention机制
-              </div>
-            </div>
-          </div>
-          <!--          AI消息-->
-          <div class="flex flex-row gap-2 mb-6">
-            <a-avatar :style="{ backgroundColor: '#00d0b6' }" class="flex-shrink-0" :size="30">
+            <!--            AI头像-->
+            <a-avatar
+              v-else
+              :style="{ backgroundColor: '#00d0b6' }"
+              class="flex-shrink-0"
+              :size="30"
+            >
               <icon-apps />
             </a-avatar>
             <div class="flex flex-col gap-2">
-              <div class="font-semibold text-gray-700">ChatGPT</div>
+              <div class="font-semibold text-gray-700">
+                {{ message.role === 'human' ? '云法' : 'ChatGPT生产助手' }}
+              </div>
               <div
+                v-if="message.role === 'human'"
+                class="bg-blue-700 text-white border border-blue-800 px-4 py-3 rounded-2xl leading-5"
+              >
+                <!--                请详细解释一下Attention机制-->
+                {{ message.content }}
+              </div>
+              <div
+                v-else
                 class="max-w-max bg-gray-100 text-black border border-gray-200 px-4 py-3 rounded-2xl leading-5"
               >
-                注意力机制（Attention
-                Mechanism）是现代深度学习中尤为重要的一种技术，尤其在处理自然语言处理（NLP）任务以及计算机视觉任务时有着广泛的应用。它的核心思想是通过赋予不同的输入元素以不同的权重，从而使模型能够关注更重要或更相关的信息。这种方法最早是在机器翻译领域引入的，但是之后迅速扩展到了其他领域。
-                为了详细解释注意力机制，让我们从几个核心概念开始： ### 1. 基本概念 ####
-                上下文向量（Context Vector）
-                在传统的序列到序列（Sequence-to-Sequence，Seq2Seq）模型中，隐藏状态（Hidden
-                State）通常会被压缩成一个固定维度的上下文向量，用来表示整个输入序列的信息。然而，这种方式经常会导致信息丢失，尤其是在处理长序列时。
-                #### 权重（Weights）
-                注意力机制通过计算输入元素的权重来决定哪些部分的信息是更重要的。这些权重通常是通过一种称为"注意力得分"（Attention
-                Scores）的方式来计算的。
+                {{ message.content }}
+                <!--                注意力机制（Attention-->
+                <!--                Mechanism）是现代深度学习中尤为重要的一种技术，尤其在处理自然语言处理（NLP）任务以及计算机视觉任务时有着广泛的应用。它的核心思想是通过赋予不同的输入元素以不同的权重，从而使模型能够关注更重要或更相关的信息。这种方法最早是在机器翻译领域引入的，但是之后迅速扩展到了其他领域。-->
+                <!--                为了详细解释注意力机制，让我们从几个核心概念开始： ### 1. 基本概念 ####-->
+                <!--                上下文向量（Context Vector）-->
+                <!--                在传统的序列到序列（Sequence-to-Sequence，Seq2Seq）模型中，隐藏状态（Hidden-->
+                <!--                State）通常会被压缩成一个固定维度的上下文向量，用来表示整个输入序列的信息。然而，这种方式经常会导致信息丢失，尤其是在处理长序列时。-->
+                <!--                #### 权重（Weights）-->
+                <!--                注意力机制通过计算输入元素的权重来决定哪些部分的信息是更重要的。这些权重通常是通过一种称为"注意力得分"（Attention-->
+                <!--                Scores）的方式来计算的。-->
               </div>
             </div>
           </div>
+          <!--          当没有数据时,显示默认的应用图标和应用名称-->
+          <div
+            v-if="!messages.length"
+            class="mt-[200px] flex flex-col items-center justify-center gap-2"
+          >
+            <a-avatar :size="70" shape="square" :style="{ backgroundColor: '#00d0b6' }">
+              <icon-apps />
+            </a-avatar>
+            <div class="text-2xl font-semibold text-gray-900">ChatGPT生产助手</div>
+          </div>
+          <!--          AI消息-->
+          <!--          <div class="flex flex-row gap-2 mb-6">-->
+          <!--            <a-avatar :style="{ backgroundColor: '#00d0b6' }" class="flex-shrink-0" :size="30">-->
+          <!--              <icon-apps />-->
+          <!--            </a-avatar>-->
+          <!--            <div class="flex flex-col gap-2">-->
+          <!--              <div class="font-semibold text-gray-700">ChatGPT</div>-->
+          <!--              <div-->
+          <!--                class="max-w-max bg-gray-100 text-black border border-gray-200 px-4 py-3 rounded-2xl leading-5"-->
+          <!--              >-->
+          <!--                注意力机制（Attention-->
+          <!--                Mechanism）是现代深度学习中尤为重要的一种技术，尤其在处理自然语言处理（NLP）任务以及计算机视觉任务时有着广泛的应用。它的核心思想是通过赋予不同的输入元素以不同的权重，从而使模型能够关注更重要或更相关的信息。这种方法最早是在机器翻译领域引入的，但是之后迅速扩展到了其他领域。-->
+          <!--                为了详细解释注意力机制，让我们从几个核心概念开始： ### 1. 基本概念 ####-->
+          <!--                上下文向量（Context Vector）-->
+          <!--                在传统的序列到序列（Sequence-to-Sequence，Seq2Seq）模型中，隐藏状态（Hidden-->
+          <!--                State）通常会被压缩成一个固定维度的上下文向量，用来表示整个输入序列的信息。然而，这种方式经常会导致信息丢失，尤其是在处理长序列时。-->
+          <!--                #### 权重（Weights）-->
+          <!--                注意力机制通过计算输入元素的权重来决定哪些部分的信息是更重要的。这些权重通常是通过一种称为"注意力得分"（Attention-->
+          <!--                Scores）的方式来计算的。-->
+          <!--              </div>-->
+          <!--            </div>-->
+          <!--          </div>-->
           <!--          AI加载状态-->
-          <div class="flex flex-row gap-2 mb-6">
+          <div v-if="isLoading" class="flex flex-row gap-2 mb-6">
             <a-avatar :style="{ backgroundColor: '#00d0b6' }" class="flex-shrink-0" :size="30">
               <icon-apps />
             </a-avatar>
@@ -92,7 +181,8 @@ async function debug() {
         <div class="w-full flex-shrink-0 flex flex-col">
           <!--          顶部输入框-->
           <div class="px-6 flex items-center gap-4">
-            <a-button class="flex-shrink-0" type="text" shape="circle">
+            <!--            清除按钮-->
+            <a-button class="flex-shrink-0" type="text" shape="circle" @click="clearMessage">
               <template #icon>
                 <icon-empty size="16" :style="{ color: '#374151' }" />
               </template>
@@ -101,13 +191,14 @@ async function debug() {
             <div
               class="h-[50px] flex items-center gap-2 px-4 flex-1 border border-gray-200 rounded-full"
             >
-              <input type="text" class="flex-1 outline-0" />
+              <!--              input输入框-->
+              <input type="text" class="flex-1 outline-0" v-model="query" @keyup.enter="send" />
               <a-button type="text" shape="circle">
                 <template #icon>
                   <icon-plus-circle size="16" :style="{ color: '#374151' }" />
                 </template>
               </a-button>
-              <a-button type="text" shape="circle">
+              <a-button type="text" shape="circle" @click="send">
                 <template #icon>
                   <icon-send size="16" :style="{ color: '#1d4ed8' }" />
                 </template>

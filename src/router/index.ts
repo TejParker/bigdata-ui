@@ -42,6 +42,22 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/',
+      component: BlankLayout,
+      children: [
+        {
+          path: 'energy/repair',
+          name: 'energy-repair',
+          component: () => import('@/views/energy/repair/EnergyRepair.vue'),
+        },
+        {
+          path: 'yield/repair',
+          name: 'yield-repair',
+          component: () => import('@/views/yield/repair/YieldRepair.vue'),
+        },
+      ],
+    },
     /*{
       path: '/',
       name: 'home',
